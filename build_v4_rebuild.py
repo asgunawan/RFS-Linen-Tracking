@@ -19,6 +19,7 @@ NEW_SCRIPT = r"""<script>
         function processData(data) {
             const inventory       = {};
             const usageByDate     = {};
+            const usageByWardDate = {};
             const complianceAlerts = [];
             const allDwells       = {
                 'New Linen Department':     [],
@@ -26,6 +27,7 @@ NEW_SCRIPT = r"""<script>
                 'Cleaned Linen Department': [],
                 'Ward': []          // any ward bucket
             };
+            const wardsSet = new Set();
             const initMeta = {};    // EPC -> { initialCycles, homeWard }
 
             data.sort((a, b) => new Date(a['Event Timestamp']) - new Date(b['Event Timestamp']));
@@ -73,12 +75,20 @@ NEW_SCRIPT = r"""<script>
                 // Usage: IN at any ward
                 if (loc.startsWith('Ward') && proc === 'IN') {
                     usageByDate[dateStr] = (usageByDate[dateStr] || 0) + 1;
+                    wardsSet.add(loc);
+                    if (!usageByWardDate[loc]) usageByWardDate[loc] = {};
+                    usageByWardDate[loc][dateStr] = (usageByWardDate[loc][dateStr] || 0) + 1;
                     item.lastInTime = time;
                 }
 
                 // Cycle count: IN at Laundry
                 if (loc === 'Laundry Department' && proc === 'IN') {
                     item.cycles += 1;
+                }
+
+                // Trust explicit final cycle count at retirement
+                if (proc === 'DECOMMISSION' && typeof ev['Final Cycles'] === 'number') {
+                    item.cycles = Math.max(item.cycles, ev['Final Cycles']);
                 }
 
                 // Compliance: illegal skips
@@ -107,7 +117,7 @@ NEW_SCRIPT = r"""<script>
                 }
             });
 
-            return { inventory, usageByDate, complianceAlerts, allDwells };
+            return { inventory, usageByDate, usageByWardDate, wards: Array.from(wardsSet).sort(), complianceAlerts, allDwells };
         }
 
         const processed = processData(rawData);
@@ -156,17 +166,51 @@ NEW_SCRIPT = r"""<script>
         });
 
         // ── Chart 1: Usage by Ward (last 30 days) ─────────────────────────
-        const usageDates  = Object.keys(processed.usageByDate).sort().slice(-30);
-        const usageCounts = usageDates.map(d => processed.usageByDate[d]);
+        const completeCutoffDate = SIM_END.toISOString().split('T')[0];
+        const allCompleteDates = Object.keys(processed.usageByDate)
+            .filter(d => d < completeCutoffDate)
+            .sort();
 
-        new Chart(document.getElementById('cycles-lifespan-chart'), {
+        function getUsageSeries(ward) {
+            const source = (ward === 'All Wards')
+                ? processed.usageByDate
+                : (processed.usageByWardDate[ward] || {});
+            const labels = allCompleteDates.slice(-30);
+            const values = labels.map(d => source[d] || 0);
+            return { labels, values };
+        }
+
+        const wardFilter = document.getElementById('ward-filter');
+        if (wardFilter) {
+            wardFilter.innerHTML = '<option>All Wards</option>';
+            processed.wards.forEach(ward => {
+                const opt = document.createElement('option');
+                opt.value = ward;
+                opt.textContent = ward;
+                wardFilter.appendChild(opt);
+            });
+        }
+
+        const initialUsage = getUsageSeries('All Wards');
+        const usageChart = new Chart(document.getElementById('cycles-lifespan-chart'), {
             type: 'bar',
             data: {
-                labels: usageDates,
-                datasets: [{ label: 'Linen IN Events (All Wards)', data: usageCounts, backgroundColor: '#0056b3' }]
+                labels: initialUsage.labels,
+                datasets: [{ label: 'Linen IN Events (All Wards)', data: initialUsage.values, backgroundColor: '#0056b3' }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
+
+        if (wardFilter) {
+            wardFilter.addEventListener('change', () => {
+                const selectedWard = wardFilter.value || 'All Wards';
+                const usage = getUsageSeries(selectedWard);
+                usageChart.data.labels = usage.labels;
+                usageChart.data.datasets[0].data = usage.values;
+                usageChart.data.datasets[0].label = `Linen IN Events (${selectedWard})`;
+                usageChart.update();
+            });
+        }
 
         // ── Chart 2: Stock Levels ──────────────────────────────────────────
         // Items with an open IN (last event = IN, no matching OUT) are genuinely
@@ -254,12 +298,18 @@ NEW_SCRIPT = r"""<script>
         });
 
         // ── Chart 3: Life Cycle Analysis ──────────────────────────────────
-        const lc = { 'New (0-20)': 0, 'Active (21-70)': 0, 'Old (71-99)': 0, 'Retired (100+)': 0 };
+        // Red bar is a risk backlog indicator:
+        // items at >=100 cycles that are NOT yet decommissioned.
+        const lc = { 'New (0-20)': 0, 'Active (21-70)': 0, 'Old (71-99)': 0, 'Overdue (100+)': 0 };
         items.forEach(i => {
+            const last = getLastEvent(i);
+            const isAlreadyRetired = last && last.Process === 'DECOMMISSION';
+            if (isAlreadyRetired) return;
+
             if      (i.cycles <= 20) lc['New (0-20)']++;
             else if (i.cycles <= 70) lc['Active (21-70)']++;
             else if (i.cycles <= 99) lc['Old (71-99)']++;
-            else                     lc['Retired (100+)']++;
+            else                     lc['Overdue (100+)']++;
         });
 
         new Chart(document.getElementById('lost-by-step-chart'), {
@@ -387,7 +437,9 @@ NEW_SCRIPT = r"""<script>
 
         // ── Forecasting ────────────────────────────────────────────────────
         // Calculate daily usage from the full history, then project 60 days forward
-        const allDates = Object.keys(processed.usageByDate).sort();
+        const allDates = Object.keys(processed.usageByDate)
+            .filter(d => d < completeCutoffDate)
+            .sort();
         const FORECAST_DAYS = 60;
 
         // 7-day rolling average for smoothing

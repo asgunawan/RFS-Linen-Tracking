@@ -10,6 +10,16 @@ NUM_ITEMS = 193          # par level for 20-bed hospital POC
 DAYS      = 120          # 2025-01-01 through ~2025-05-01
 START_DATE = datetime(2025, 1, 1, 8, 0, 0)
 
+# ---------------------------------------------------------------------------
+# Frontend test-only hardcoded injections (band-aid / non-production)
+# These are intentionally hardcoded to make specific dashboard states visible:
+# 1) keep some towels in New Linen at snapshot
+# 2) force a small overdue-retirement red flag backlog
+# ---------------------------------------------------------------------------
+FRONTEND_TEST_HARDCODE = True
+HARDCODE_NEW_LINEN_AT_END = 10
+HARDCODE_OVERDUE_NOT_RETIRED = 3
+
 # EPCIS Constants
 GTIN_TOWEL = "08901030000005"
 APP_ID     = "LinenTrack-v2.1"
@@ -59,6 +69,7 @@ DWELL_NEW     = (8,   24)
 DWELL_LAUNDRY = (4,   8)     # fast cleaning
 DWELL_STORE   = (12,  48)
 DWELL_WARD    = (6,   18)    # towels swap fast
+LAUNDRY_QUEUE_DELAY = (0.5, 6.0)  # capacity bottleneck wait before wash starts
 
 def dwell_for(location, anomaly_roll):
     if location == "New Linen Department":
@@ -66,6 +77,7 @@ def dwell_for(location, anomaly_roll):
         if anomaly_roll < 0.03: h = random.uniform(48, 96)
     elif location == "Laundry Department":
         h = random.uniform(*DWELL_LAUNDRY)
+        h += random.uniform(*LAUNDRY_QUEUE_DELAY)
         if anomaly_roll < 0.04: h = random.uniform(24, 48)
     elif location == "Cleaned Linen Department":
         h = random.uniform(*DWELL_STORE)
@@ -223,6 +235,7 @@ for i in range(1, NUM_ITEMS + 1):
 
 while queue:
     wi = queue.pop(0)
+
     item_evs, decomm_time = simulate_item(
         wi["epc"], wi["initial_cycles"], wi["home_ward"],
         wi["start_time"], wi["loc_idx"], wi["retire_at"],
@@ -250,6 +263,56 @@ while queue:
                 "is_replacement": True, # prevents further cascading
             })
 
+# ---------------------------------------------------------------------------
+# Hardcoded frontend test injections (non-production behavior)
+# ---------------------------------------------------------------------------
+if FRONTEND_TEST_HARDCODE:
+    item_desc = "Bath Towel - Large"
+    gtin = GTIN_TOWEL
+
+    # (1) Force ~10 open New Linen items near SIM_END
+    for _ in range(HARDCODE_NEW_LINEN_AT_END):
+        epc = f"urn:epc:id:sgtin:0890103.00000.{item_counter:05d}"
+        item_counter += 1
+        total_items += 1
+
+        home_ward = ward_location(random.choice(WARDS))
+        t_in = SIM_END - timedelta(hours=random.uniform(2, 10))
+        job_id = str(uuid.uuid4())
+
+        events.append(make_event(
+            t_in - timedelta(minutes=1),
+            epc, "New Linen Department", "INIT", item_desc, gtin,
+            str(uuid.uuid4()),
+            extra={"Initial Cycles": 0, "Home Ward": home_ward}
+        ))
+        events.append(make_event(
+            t_in,
+            epc, "New Linen Department", "IN", item_desc, gtin, job_id
+        ))
+
+    # (2) Force 2-4 overdue items (using 3) with 105-110 cycles and no DECOMMISSION
+    for _ in range(HARDCODE_OVERDUE_NOT_RETIRED):
+        epc = f"urn:epc:id:sgtin:0890103.00000.{item_counter:05d}"
+        item_counter += 1
+        total_items += 1
+
+        home_ward = ward_location(random.choice(WARDS))
+        forced_cycles = random.randint(105, 110)
+        t_in = SIM_END - timedelta(hours=random.uniform(1, 6))
+        job_id = str(uuid.uuid4())
+
+        events.append(make_event(
+            t_in - timedelta(minutes=1),
+            epc, "New Linen Department", "INIT", item_desc, gtin,
+            str(uuid.uuid4()),
+            extra={"Initial Cycles": forced_cycles, "Home Ward": home_ward}
+        ))
+        events.append(make_event(
+            t_in,
+            epc, "Cleaned Linen Department", "IN", item_desc, gtin, job_id
+        ))
+
 # Sort chronologically
 events.sort(key=lambda x: x["Event Timestamp"])
 
@@ -263,4 +326,7 @@ print(f"Generated {len(events):,} EPCIS events for {total_items} items "
       f"over {DAYS} days ({START_DATE.date()} -> "
       f"{SIM_END.date()}).")
 print(f"  Decommissions: {decomms}  |  Replenishments (new stock): {replenishments}")
+if FRONTEND_TEST_HARDCODE:
+    print(f"  [HARDCODED FRONTEND TEST] New Linen open-at-end items: {HARDCODE_NEW_LINEN_AT_END}")
+    print(f"  [HARDCODED FRONTEND TEST] Overdue-not-retired items: {HARDCODE_OVERDUE_NOT_RETIRED}")
 print("Saved to epcis_events.json")

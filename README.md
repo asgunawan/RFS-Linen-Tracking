@@ -27,6 +27,12 @@ A portable, single-file **Pure HTML** dashboard for tracking hospital towels usi
 - **Total EPCIS events generated**: ~50,000+
 - **Lifecycle policy**: retire at 100 wash cycles (`DECOMMISSION` event) + replacement towel arrival after 1–7 days
 
+Frontend test hardcode (band-aid, non-production):
+- This POC currently includes **intentional hardcoded test injections** in the generator for UI validation.
+- Injects about **10 open New Linen items near simulation end** so the New Linen stock bucket is visible.
+- Injects about **3 overdue items (105–110 cycles) that are not decommissioned** so the red-flag backlog bar can be tested.
+- These are for frontend testing only and should be removed/disabled for realistic production simulation.
+
 ---
 
 ## 🔄 Towel Status Model
@@ -56,6 +62,11 @@ Cleaned Linen Dept                            Ward 1–4
 ```
 
 Towels rotate faster than bed linen (shorter ward dwell, faster laundry turnaround).
+
+Laundry realism note:
+- Laundry is modeled with a **finite machine pool** (capacity-limited), so items can queue before wash starts.
+- This can represent real bottlenecks where shared laundry resources are occupied by other demand.
+- If you need heavier bottlenecks, reduce the configured laundry machine count in the generator.
 
 Operational note:
 - **New Linen Department** is for brand-new stock staging.
@@ -91,11 +102,15 @@ Doughnut chart showing how many items are currently at each stage at the snapsho
 Counting rule: an item is counted in a stage only when its latest event is an open `IN` for that stage (no corresponding `OUT` yet).
 
 ### 3. Towel Life Cycle Analysis
-Bar chart bucketing all items by wash-cycle age:
+Bar chart bucketing active (not yet decommissioned) items by wash-cycle age:
 - **New (0–20 cycles)**
 - **Active (21–70 cycles)**
 - **Old (71–99 cycles)**
-- **Retired (100+ cycles)**
+- **Overdue (100+ cycles)**
+
+Important interpretation:
+- The red bar is a **red-flag backlog indicator**: items that have reached `>=100` cycles but are still not decommissioned.
+- It is **not** the count of towels already retired.
 
 Initial cycles are read from the `INIT` meta-event embedded at the start of each item's history, enabling accurate age tracking across the full simulation window.
 
