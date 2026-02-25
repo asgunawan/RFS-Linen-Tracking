@@ -398,25 +398,39 @@ NEW_SCRIPT = r"""<script>
             }
         });
 
-        // ── Inventory Table ────────────────────────────────────────────────
-        const tbody = document.querySelector('.table-card tbody');
-        if (tbody) {
-            tbody.innerHTML = '';
-            items.slice(0, 15).forEach(item => {
-                const shortEpc = item.epc.split('.').pop();
+        // ── Recent Towel Activity Table ────────────────────────────────────
+        const activityBody = document.getElementById('recent-activity-body');
+        if (activityBody) {
+            activityBody.innerHTML = '';
+            const itemByEpc = Object.fromEntries(items.map(item => [item.epc, item]));
+
+            const recentEvents = [...rawData]
+                .filter(ev => ev && ev['Event Timestamp'] && ev['EPC'] && ev['Process'] !== 'INIT')
+                .sort((a, b) => new Date(b['Event Timestamp']) - new Date(a['Event Timestamp']))
+                .slice(0, 15);
+
+            recentEvents.forEach(ev => {
                 const tr = document.createElement('tr');
-                const statusLabel = item.cycles >= 100 ? 'Retired' : item.currentLocation.startsWith('Ward') ? 'In Ward' : 'Active';
+                const shortEpc = String(ev['EPC']).split('.').pop();
+                const processLabel = ev['Process'] || '-';
+                const cycleCount = itemByEpc[ev['EPC']] ? itemByEpc[ev['EPC']].cycles : 0;
+                const statusLabel =
+                    processLabel === 'DECOMMISSION' ? 'Retired' :
+                    processLabel === 'OUT' ? 'Checked Out' :
+                    processLabel === 'IN' ? 'Checked In' :
+                    'Active';
+                const timestamp = String(ev['Event Timestamp']).replace('T', ' ').replace('Z', '');
+
                 tr.innerHTML = `
+                    <td>${timestamp}</td>
                     <td>${shortEpc}</td>
-                    <td>${item.type}</td>
+                    <td>${ev['Item Description'] || '-'}</td>
+                    <td>${cycleCount}</td>
+                    <td>${ev['Location'] || '-'}</td>
                     <td>${statusLabel}</td>
-                    <td>2025-01-01</td>
-                    <td>${item.cycles}</td>
-                    <td>${item.cycles} / 100</td>
-                    <td>${item.currentLocation}</td>
                     <td><button class="action-btn drilldown">Drill Down</button></td>
                 `;
-                tbody.appendChild(tr);
+                activityBody.appendChild(tr);
             });
         }
 

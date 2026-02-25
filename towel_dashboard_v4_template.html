@@ -200,6 +200,83 @@
       font-weight: 700;
     }
 
+    .tables-container {
+      padding: 0 1.5rem 2rem;
+    }
+
+    .table-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .table-card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      color: #0056b3;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 0.5rem;
+    }
+
+    .table-controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .table-controls button {
+      background: #0056b3;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .table-controls button:hover {
+      background: #004085;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    th {
+      background-color: #e9f0f7;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .action-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .action-btn.drilldown {
+      background: #17a2b8;
+    }
+
     #ward-filter {
       border: 1px solid #cfd6de;
       border-radius: 4px;
@@ -225,6 +302,10 @@
       .charts-container,
       .forecast-layout {
         grid-template-columns: 1fr;
+      }
+
+      table {
+        font-size: 0.85rem;
       }
     }
   </style>
@@ -325,6 +406,31 @@
         <li><strong>Estimated Replenishment Need:</strong> <span id="fc-replenish">0 items/month</span></li>
       </ul>
     </aside>
+  </section>
+
+  <section class="tables-container">
+    <div class="table-card">
+      <h2 data-en="Recent Towel Activity" data-th="กิจกรรมผ้าเช็ดตัวล่าสุด">Recent Towel Activity</h2>
+      <div class="table-controls">
+        <button data-en="Filter by Activity" data-th="กรองตามกิจกรรม">Filter by Activity</button>
+        <button data-en="Export CSV" data-th="ส่งออก CSV">Export CSV</button>
+        <button data-en="Refresh Data" data-th="รีเฟรชข้อมูล">Refresh Data</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th data-en="Timestamp" data-th="เวลา">Timestamp</th>
+            <th data-en="Towel ID" data-th="รหัสผ้าเช็ดตัว">Towel ID</th>
+            <th data-en="Type" data-th="ประเภท">Type</th>
+            <th data-en="Life Cycle Count" data-th="จำนวนรอบการใช้งาน">Life Cycle Count</th>
+            <th data-en="Location" data-th="ตำแหน่ง">Location</th>
+            <th data-en="Activity" data-th="กิจกรรม">Activity</th>
+            <th data-en="Actions" data-th="การกระทำ">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="recent-activity-body"></tbody>
+      </table>
+    </div>
   </section>
 
   <!--__DASHBOARD_SCRIPT__-->
