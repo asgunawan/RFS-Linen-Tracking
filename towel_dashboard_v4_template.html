@@ -388,10 +388,10 @@
         <button id="th-btn">ไทย (Thai)</button>
       </div>
       <div class="date-filter">
-        <label for="date-range">Date Range:</label>
+        <label for="date-range" data-en="Date Range:" data-th="ช่วงวันที่:">Date Range:</label>
         <input type="month" id="date-range" value="2025-12">
       </div>
-      <button class="print-btn" onclick="window.print()">Print / PDF Report</button>
+      <button class="print-btn" onclick="window.print()" data-en="Print / PDF Report" data-th="พิมพ์ / รายงาน PDF">Print / PDF Report</button>
     </div>
   </header>
 
@@ -411,6 +411,7 @@
     <div class="kpi-card" id="ward-coverage" data-tooltip="Towels currently in wards versus 20-bed coverage target.">
       <h3 data-en="Towel Ward Coverage" data-th="ความครอบคลุมผ้าเช็ดตัวในวอร์ด">Towel Ward Coverage</h3>
       <div class="value">0 / 20 Beds</div>
+      <div style="font-size: 0.8rem; color: #6c757d;" data-en="Beds" data-th="เตียง">Beds</div>
       <!-- TODO: Add per-ward coverage pills here in a future non-POC scorecard version. -->
     </div>
     <div class="kpi-card" id="par-level-ratio" data-tooltip="Current inventory per bed against the 10:1 par target.">
@@ -443,11 +444,11 @@
       <h2>
         <span data-en="4. Towel Cycle Time Duration" data-th="4. ระยะเวลาในแต่ละสถานะ">4. Towel Cycle Time Duration</span>
         <div class="stage-btn-group">
-          <button class="stage-btn" data-stage="New Linen">New Linen</button>
-          <button class="stage-btn" data-stage="Laundry">Laundry</button>
-          <button class="stage-btn active" data-stage="Storage">Storage</button>
-          <button class="stage-btn" data-stage="Ward">Ward</button>
-          <button class="stage-btn" data-stage="DEBUG_TOTAL">Debug Total</button>
+          <button class="stage-btn" data-stage="New Linen" data-en="New Linen" data-th="ผ้าใหม่">New Linen</button>
+          <button class="stage-btn" data-stage="Laundry" data-en="Laundry" data-th="ซักรีด">Laundry</button>
+          <button class="stage-btn active" data-stage="Storage" data-en="Storage" data-th="คลังสินค้า">Storage</button>
+          <button class="stage-btn" data-stage="Ward" data-en="Ward" data-th="วอร์ด">Ward</button>
+          <button class="stage-btn" data-stage="DEBUG_TOTAL" data-en="Debug Total" data-th="รวมทั้งหมด">Debug Total</button>
         </div>
       </h2>
       <div class="chart-wrapper"><canvas id="rfid-barcode-chart"></canvas></div>
@@ -468,10 +469,10 @@
     <aside class="kpi-panel">
       <h2 data-en="Forecast KPIs" data-th="KPI การคาดการณ์">Forecast KPIs</h2>
       <ul class="kpi-lines">
-        <li><strong>Avg Daily Ward IN Events:</strong> <span id="fc-avg-daily">0</span></li>
-        <li><strong>Items Near Retirement (≥70 cycles):</strong> <span id="fc-near-retire">0</span></li>
-        <li><strong>~Days Until Next Retirement Wave:</strong> <span id="fc-days-retire">0 days</span></li>
-        <li><strong>Estimated Replenishment Need:</strong> <span id="fc-replenish">0 items/month</span></li>
+        <li><strong data-en="Avg Daily Ward IN Events:" data-th="ค่าเฉลี่ยการเข้าวอร์ดรายวัน:">Avg Daily Ward IN Events:</strong> <span id="fc-avg-daily">0</span></li>
+        <li><strong data-en="Items Near Retirement (≥70 cycles):" data-th="จำนวนผ้าใกล้ปลดระวาง (≥70 รอบ):">Items Near Retirement (≥70 cycles):</strong> <span id="fc-near-retire">0</span></li>
+        <li><strong data-en="~Days Until Next Retirement Wave:" data-th="~จำนวนวันจนถึงรอบปลดระวางถัดไป:">~Days Until Next Retirement Wave:</strong> <span id="fc-days-retire">0 days</span></li>
+        <li><strong data-en="Estimated Replenishment Need:" data-th="จำนวนสั่งซื้อโดยประมาณ:">Estimated Replenishment Need:</strong> <span id="fc-replenish">0 items/month</span></li>
       </ul>
     </aside>
   </section>

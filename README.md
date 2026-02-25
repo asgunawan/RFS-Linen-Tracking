@@ -1,7 +1,5 @@
 # Hospital Towel Tracking Dashboard (POC)
 
-⚠️ **CAUTION**: **DO NOT PUSH** any changes to GitHub unless specifically instructed by the user to prevent accidental deployment or versioning errors.
-
 A portable, single-file **Pure HTML** dashboard for tracking hospital towels using RFID/EPCIS standard events. The entire dashboard — HTML, CSS, JavaScript, and synthetic data — is embedded in one self-contained file for easy sharing.
 
 ---
