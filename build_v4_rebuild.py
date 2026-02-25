@@ -417,22 +417,63 @@ NEW_SCRIPT = r"""<script>
             btn.addEventListener('click', () => render4aChart(btn.dataset.stage));
         });
 
-        // ── Chart 4b: Linen Status Snapshot (New/Washing/Clean/Dirty) ─────
-        // Directly mirrors stockCounts — same real open-IN data, different labels
-        const statusCounts = {
-            'New (Unwashed)': stockCounts['New Linen'],
-            'Washing':        stockCounts['In Laundry'],
-            'Clean (Ready)':  stockCounts['Clean Storage'],
-            'Dirty':          stockCounts['In Wards']
+        // ── Chart 4b: Turnover Time vs Target ─────────────────────────────
+        const getAvg = (arr) => arr && arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+
+        const stageMapping = {
+            'New Linen': 'New Linen Department',
+            'Laundry':   'Laundry Department',
+            'Storage':   'Cleaned Linen Department',
+            'Ward':      'Ward'
         };
 
+        const chart4bLabels = ['New Linen', 'Laundry', 'Storage', 'Ward'];
+        const actualAvgs = chart4bLabels.map(label => +getAvg(processed.allDwells[stageMapping[label]]).toFixed(1));
+        const targetAvgs = [8, 4, 48, 18]; // Target hours for each stage
+
         new Chart(document.getElementById('linen-status-chart'), {
-            type: 'doughnut',
+            type: 'bar',
             data: {
-                labels: Object.keys(statusCounts),
-                datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#17a2b8','#ffc107','#28a745','#dc3545'] }]
+                labels: chart4bLabels,
+                datasets: [
+                    {
+                        label: 'Actual Avg (Hours)',
+                        data: actualAvgs,
+                        backgroundColor: actualAvgs.map((v, i) => v > targetAvgs[i] ? '#dc3545' : '#28a745'),
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Target (Hours)',
+                        data: targetAvgs,
+                        backgroundColor: '#e9ecef',
+                        borderColor: '#adb5bd',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Hours' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            afterBody: (context) => {
+                                const i = context[0].dataIndex;
+                                const diff = (actualAvgs[i] - targetAvgs[i]).toFixed(1);
+                                return diff > 0 ? `Alert: ${diff}h behind target` : `Efficiency: ${Math.abs(diff)}h ahead`;
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         // ── Forecasting ────────────────────────────────────────────────────
