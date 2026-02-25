@@ -417,7 +417,7 @@ NEW_SCRIPT = r"""<script>
             btn.addEventListener('click', () => render4aChart(btn.dataset.stage));
         });
 
-        // ── Chart 4b: Turnover Time vs Target ─────────────────────────────
+        // ── Chart 5: Turnover Time vs Target ─────────────────────────────
         const getAvg = (arr) => arr && arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
 
         const stageMapping = {
@@ -476,7 +476,7 @@ NEW_SCRIPT = r"""<script>
             }
         });
 
-        // ── Forecasting ────────────────────────────────────────────────────
+        // ── Chart 6: Forecasting ──────────────────────────────────────────
         // Calculate daily usage from the full history, then project 60 days forward
         const allDates = Object.keys(processed.usageByDate)
             .filter(d => d < completeCutoffDate)
