@@ -123,6 +123,15 @@ NEW_SCRIPT = r"""<script>
         const processed = processData(rawData);
         const items     = Object.values(processed.inventory);
         const SIM_END   = new Date('2025-05-01T08:00:00Z');
+        const LOW_STOCK_THRESHOLD = 5;
+
+        const latestEventMs = rawData.reduce((maxTs, ev) => {
+            const ts = Date.parse(ev['Event Timestamp'] || '');
+            return Number.isNaN(ts) ? maxTs : Math.max(maxTs, ts);
+        }, 0);
+        const recencyEnd = latestEventMs ? new Date(latestEventMs) : SIM_END;
+        const recencyStart = new Date(recencyEnd);
+        recencyStart.setDate(recencyStart.getDate() - 1);
 
         function getLastEvent(item) {
             return item.history[item.history.length - 1] || null;
@@ -149,9 +158,6 @@ NEW_SCRIPT = r"""<script>
             const last = getLastEvent(i);
             return last && last.Process !== 'DECOMMISSION';
         });
-
-        const totalCycles = activeItems.reduce((s, i) => s + i.cycles, 0);
-        document.querySelector('#avg-cycles    .value').textContent = (totalCycles / Math.max(activeItems.length, 1)).toFixed(1);
 
         // ── Language Toggle ────────────────────────────────────────────────
         const enBtn = document.getElementById('en-btn');
@@ -216,6 +222,7 @@ NEW_SCRIPT = r"""<script>
         // Items with an open IN (last event = IN, no matching OUT) are genuinely
         // "currently in" that stage at the snapshot date.
         const stockCounts = { 'New Linen': 0, 'In Laundry': 0, 'Clean Storage': 0, 'In Wards': 0 };
+        const wardStockCounts = Object.fromEntries(processed.wards.map(ward => [ward, 0]));
         items.forEach(i => {
             const cur = getCurrentCheckIn(i);
             if (!cur) return;
@@ -223,45 +230,60 @@ NEW_SCRIPT = r"""<script>
             if (loc === 'New Linen Department')      stockCounts['New Linen']++;
             else if (loc === 'Laundry Department')   stockCounts['In Laundry']++;
             else if (loc === 'Cleaned Linen Department') stockCounts['Clean Storage']++;
-            else if (loc.startsWith('Ward'))         stockCounts['In Wards']++;
+            else if (loc.startsWith('Ward')) {
+                stockCounts['In Wards']++;
+                wardStockCounts[loc] = (wardStockCounts[loc] || 0) + 1;
+            }
         });
+
+        // ── Top KPI: Linen Flow (24h) ─────────────────────────────────────
+        const received24h = rawData.filter(ev => {
+            if (ev['Process'] !== 'IN' || !String(ev['Location'] || '').startsWith('Ward')) return false;
+            const t = new Date(ev['Event Timestamp']);
+            return t >= recencyStart && t <= recencyEnd;
+        }).length;
+
+        const dispatched24h = rawData.filter(ev => {
+            if (ev['Process'] !== 'OUT' || ev['Location'] !== 'Cleaned Linen Department') return false;
+            const t = new Date(ev['Event Timestamp']);
+            return t >= recencyStart && t <= recencyEnd;
+        }).length;
+
+        const wardNames = Object.keys(wardStockCounts).sort();
+        const lowStockWards = wardNames.filter(ward => (wardStockCounts[ward] || 0) < LOW_STOCK_THRESHOLD);
+        const throughputValueEl = document.getElementById('throughput-24h-value');
+        if (throughputValueEl) throughputValueEl.textContent = `${received24h} IN / ${dispatched24h} OUT`;
+
+
+        const throughputCard = document.getElementById('throughput-24h');
+        if (throughputCard) {
+            throughputCard.setAttribute(
+                'data-tooltip',
+                `Linen movement in the latest 24-hour window.\nWindow: ${recencyStart.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} ${recencyStart.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} → ${recencyEnd.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} ${recencyEnd.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}\nIN: ${received24h}  OUT: ${dispatched24h}`
+            );
+        }
 
         const circulatingNow = Object.values(stockCounts).reduce((a, b) => a + b, 0);
         document.querySelector('#total-linen .value').textContent = circulatingNow;
 
         const bedCoverage = Math.min(stockCounts['In Wards'], 20);
         const wardCoverageValueEl = document.querySelector('#ward-coverage .value');
-        wardCoverageValueEl.textContent = `${bedCoverage} / 20 Beds`;
+        wardCoverageValueEl.textContent = `${bedCoverage} / 20`;
         wardCoverageValueEl.classList.remove('kpi-good', 'kpi-caution');
         if (bedCoverage >= 20) {
             wardCoverageValueEl.classList.add('kpi-good');
         }
-
-        const parRatioNum = circulatingNow / 20;
-        const parRatio = parRatioNum.toFixed(2);
-        const parRatioValueEl = document.querySelector('#par-level-ratio .value');
-        parRatioValueEl.textContent = `${parRatio} / 10.0`;
-        parRatioValueEl.classList.remove('kpi-good', 'kpi-caution');
-        if (parRatioNum >= 10) {
-            parRatioValueEl.classList.add('kpi-good');
-        } else if (parRatioNum >= 7) {
-            parRatioValueEl.classList.add('kpi-caution');
-        }
+        // Future: Implement pill display logic here when scaling up (e.g., only show if stock < threshold)
 
         const TARGET_BEDS = 20;
         const TARGET_PAR_RATIO = 10;
         const targetParInventory = TARGET_BEDS * TARGET_PAR_RATIO;
-        const latestEventMs = rawData.reduce((maxTs, ev) => {
-            const ts = Date.parse(ev['Event Timestamp'] || '');
-            return Number.isNaN(ts) ? maxTs : Math.max(maxTs, ts);
-        }, 0);
-        const recencyEnd = latestEventMs ? new Date(latestEventMs) : SIM_END;
-        const recencyStart = new Date(recencyEnd);
-        recencyStart.setDate(recencyStart.getDate() - 30);
+        const recent30dStart = new Date(recencyEnd);
+        recent30dStart.setDate(recent30dStart.getDate() - 30);
         const recentDecomm30d = rawData.filter(ev => {
             if (ev['Process'] !== 'DECOMMISSION' || !ev['Event Timestamp']) return false;
             const t = new Date(ev['Event Timestamp']);
-            return t >= recencyStart && t <= recencyEnd;
+            return t >= recent30dStart && t <= recencyEnd;
         }).length;
         const suggestedOrderQty = Math.max(0, targetParInventory - circulatingNow) + recentDecomm30d;
 
@@ -271,21 +293,13 @@ NEW_SCRIPT = r"""<script>
             'data-tooltip',
             `Active towels currently in circulation across all stages.\nNow in circulation: ${circulatingNow}`
         );
-        document.getElementById('avg-cycles').setAttribute(
-            'data-tooltip',
-            `Average wash-cycle count per active towel.\nActive items: ${activeItems.length}`
-        );
         document.getElementById('monthly-replenishment').setAttribute(
             'data-tooltip',
             `Suggested order quantity for next month.\nTarget par = ${TARGET_BEDS} beds × ${TARGET_PAR_RATIO} = ${targetParInventory}\nCurrent inventory = ${circulatingNow}\n30-day decommissions = ${recentDecomm30d}\nSuggested order = max(0, ${targetParInventory} - ${circulatingNow}) + ${recentDecomm30d} = ${suggestedOrderQty}`
         );
         document.getElementById('ward-coverage').setAttribute(
             'data-tooltip',
-            `Coverage in wards versus bed target.\nCurrent: ${bedCoverage} / ${TARGET_BEDS} beds`
-        );
-        document.getElementById('par-level-ratio').setAttribute(
-            'data-tooltip',
-            `Inventory per bed versus par target.\nCurrent: ${parRatio} / ${TARGET_PAR_RATIO}.0`
+            `Coverage in wards versus bed target.\nCurrent: ${bedCoverage} / ${TARGET_BEDS}`
         );
 
         new Chart(document.getElementById('bottlenecks-chart'), {
@@ -297,7 +311,7 @@ NEW_SCRIPT = r"""<script>
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
         });
 
-        // ── Chart 3: Life Cycle Analysis ──────────────────────────────────
+        // ── Chart 5: Life Cycle Analysis ──────────────────────────────────
         // Red bar is a risk backlog indicator:
         // items at >=100 cycles that are NOT yet decommissioned.
         const lc = { 'New (0-20)': 0, 'Active (21-70)': 0, 'Old (71-99)': 0, 'Overdue (100+)': 0 };
@@ -417,38 +431,31 @@ NEW_SCRIPT = r"""<script>
             btn.addEventListener('click', () => render4aChart(btn.dataset.stage));
         });
 
-        // ── Chart 5: Turnover Time vs Target ─────────────────────────────
-        const getAvg = (arr) => arr && arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
-
-        const stageMapping = {
-            'New Linen': 'New Linen Department',
-            'Laundry':   'Laundry Department',
-            'Storage':   'Cleaned Linen Department',
-            'Ward':      'Ward'
-        };
-
-        const chart4bLabels = ['New Linen', 'Laundry', 'Storage', 'Ward'];
-        const actualAvgs = chart4bLabels.map(label => +getAvg(processed.allDwells[stageMapping[label]]).toFixed(1));
-        const targetAvgs = [8, 4, 48, 18]; // Target hours for each stage
+        // ── Chart 3: Ward Availability vs Minimum Threshold ─────────────
+        const wardLabels = wardNames;
+        const wardValues = wardLabels.map(ward => wardStockCounts[ward] || 0);
+        const wardThreshold = wardLabels.map(() => LOW_STOCK_THRESHOLD);
 
         new Chart(document.getElementById('linen-status-chart'), {
             type: 'bar',
             data: {
-                labels: chart4bLabels,
+                labels: wardLabels,
                 datasets: [
                     {
-                        label: 'Actual Avg (Hours)',
-                        data: actualAvgs,
-                        backgroundColor: actualAvgs.map((v, i) => v > targetAvgs[i] ? '#dc3545' : '#28a745'),
+                        label: 'Available Towels',
+                        data: wardValues,
+                        backgroundColor: wardValues.map(v => v < LOW_STOCK_THRESHOLD ? '#dc3545' : '#0056b3'),
                         borderRadius: 4
                     },
                     {
-                        label: 'Target (Hours)',
-                        data: targetAvgs,
-                        backgroundColor: '#e9ecef',
-                        borderColor: '#adb5bd',
-                        borderWidth: 1,
-                        borderRadius: 4
+                        label: 'Minimum Threshold',
+                        data: wardThreshold,
+                        type: 'line',
+                        borderColor: '#ffc107',
+                        backgroundColor: '#ffc107',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0
                     }
                 ]
             },
@@ -458,7 +465,8 @@ NEW_SCRIPT = r"""<script>
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: 'Hours' }
+                        title: { display: true, text: 'Towels' },
+                        ticks: { stepSize: 1 }
                     }
                 },
                 plugins: {
@@ -467,8 +475,11 @@ NEW_SCRIPT = r"""<script>
                         callbacks: {
                             afterBody: (context) => {
                                 const i = context[0].dataIndex;
-                                const diff = (actualAvgs[i] - targetAvgs[i]).toFixed(1);
-                                return diff > 0 ? `Alert: ${diff}h behind target` : `Efficiency: ${Math.abs(diff)}h ahead`;
+                                const wardValue = wardValues[i] || 0;
+                                const diff = LOW_STOCK_THRESHOLD - wardValue;
+                                return diff > 0
+                                    ? `Alert: ${diff} below threshold`
+                                    : `Status: ${Math.abs(diff)} above threshold`;
                             }
                         }
                     }

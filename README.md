@@ -82,11 +82,10 @@ Compliance anomalies simulated:
 
 | Scorecard | Name | Logic |
 |---|---|---|
-| **1** | **Total Towel Inventory** | Count of all tracked EPCs |
-| **2** | **Avg. Life Cycles** | Mean wash count across all active items |
-| **3** | **Estimated Monthly Need** | Projected replenishment based on retirement and loss rate |
-| **4** | **Towel Ward Coverage** | Towels currently in wards vs. 20-bed target |
-| **5** | **Par Level Ratio** | Current active towels ÷ bed count (target: 10.0) |
+| **1** | **Linen Received / Dispatched** | Combined throughput: ward receipts (`IN`) and storage dispatches (`OUT`) in the latest 24-hour window |
+| **2** | **Total Towel Inventory** | Count of active towels currently in circulation |
+| **3** | **Suggested Order Next Month** | `max(0, target par - current inventory) + decommissions in last 30 days` |
+| **4** | **Towel Ward Coverage** | Towels currently in wards vs. 20-bed target, with per-ward pills |
 
 ---
 
@@ -101,7 +100,27 @@ Doughnut chart showing how many items are currently at each stage at the snapsho
 
 Counting rule: an item is counted in a stage only when its latest event is an open `IN` for that stage (no corresponding `OUT` yet).
 
-### 3. Towel Life Cycle Analysis
+### 3. Ward Availability vs Minimum Threshold
+Bar chart of current towel counts per ward with a minimum threshold reference line.
+
+- Wards below threshold are highlighted in red.
+- This is the primary low-stock monitoring view for operations.
+
+### 4. Towel Cycle Time Duration
+Interactive histogram showing how long items are currently parked at a selected stage (snapshot dwell time).
+Toggle buttons: **New Linen | Laundry | Storage | Ward | Debug Total**
+
+Stage-specific dwell units:
+- **Laundry**: hours bucketed as `2h, 4h, 6h, 8h, 10h, 12h, 18h, 24h`
+- **Ward**: hours bucketed as `2h, 4h, 6h, 8h, 10h, 12h, 18h, 24h`
+- **Clean Storage**: days bucketed as `Day 1` to `Day 7`
+- **New Linen**: days bucketed as `Day 1` to `Day 7`
+
+Consistency rule: the sum of Chart 4 bars for a selected stage must equal that stage's count in Report 2.
+
+`Debug Total` mode shows a breakdown bar chart matching the Stock Levels doughnut exactly — use this to cross-verify both charts.
+
+### 5. Towel Life Cycle Analysis
 Bar chart bucketing active (not yet decommissioned) items by wash-cycle age:
 - **New (0–20 cycles)**
 - **Active (21–70 cycles)**
@@ -114,25 +133,7 @@ Important interpretation:
 
 Initial cycles are read from the `INIT` meta-event embedded at the start of each item's history, enabling accurate age tracking across the full simulation window.
 
-### 4a. Linen Cycle Time Duration
-Interactive histogram showing how long items are currently parked at a selected stage (snapshot dwell time).
-Toggle buttons: **New Linen | Laundry | Storage | Ward | Debug Total**
-
-Stage-specific dwell units:
-- **Laundry**: hours bucketed as `2h, 4h, 6h, 8h, 10h, 12h, 18h, 24h`
-- **Ward**: hours bucketed as `2h, 4h, 6h, 8h, 10h, 12h, 18h, 24h`
-- **Clean Storage**: days bucketed as `Day 1` to `Day 7`
-- **New Linen**: days bucketed as `Day 1` to `Day 7`
-
-Consistency rule: the sum of 4a bars for a selected stage must equal that stage's count in Report 2.
-
-`Debug Total` mode shows a breakdown bar chart matching the Stock Levels doughnut exactly — use this to cross-verify both charts.
-
-### 4b. Towel Status Snapshot
-Doughnut chart of current New (Unwashed) / Washing / Clean (Ready) / Dirty counts.
-This chart mirrors Report 2 using the same open-`IN` snapshot logic.
-
-### 5. Usage Forecast (60-Day Projection)
+### 6. Usage Forecast (60-Day Projection)
 Line chart overlaying:
 - **Historical** daily ward-IN events (last 60 days, 7-day rolling average)
 - **Forecasted** trend for 60 days ahead (drift model based on recent average)

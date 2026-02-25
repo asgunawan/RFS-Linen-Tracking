@@ -80,6 +80,24 @@
       padding: 1.5rem;
     }
 
+    .summary-note {
+      font-size: 0.84rem;
+      color: #6c757d;
+      margin-top: 0.35rem;
+      line-height: 1.3;
+    }
+
+    .status-alert {
+      font-size: 0.84rem;
+      margin-top: 0.35rem;
+      color: #28a745;
+      font-weight: 600;
+    }
+
+    .status-alert.alert {
+      color: #dc3545;
+    }
+
     .kpi-card {
       background: white;
       border-radius: 8px;
@@ -374,6 +392,38 @@
         font-size: 0.85rem;
       }
     }
+
+    /* Pill Styles */
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.5rem;
+      justify-content: center;
+    }
+
+    .pill {
+      background: #e9ecef;
+      color: #343a40;
+      padding: 0.1rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid #dee2e6;
+      display: inline-block;
+    }
+
+    .pill.warning {
+      background: #fff3cd;
+      color: #856404;
+      border-color: #ffeeba;
+    }
+
+    .pill.danger {
+      background: #f8d7da;
+      color: #721c24;
+      border-color: #f5c6cb;
+    }
   </style>
 </head>
 <body>
@@ -396,27 +446,25 @@
   </header>
 
   <section class="kpi-container">
+    <div class="kpi-card" id="throughput-24h" data-tooltip="Linen movement in the latest 24-hour window.">
+      <h3 data-en="Linen Received / Dispatched" data-th="ผ้ารับเข้า / จ่ายออก">Linen Received / Dispatched</h3>
+      <div class="value" id="throughput-24h-value">0 / 0</div>
+    </div>
+
     <div class="kpi-card" id="total-linen" data-tooltip="Active towels currently in circulation across all stages.">
       <h3 data-en="Total Towel Inventory" data-th="จำนวนผ้าเช็ดตัวทั้งหมด">Total Towel Inventory</h3>
       <div class="value">0</div>
     </div>
-    <div class="kpi-card" id="avg-cycles" data-tooltip="Average wash-cycle count per active towel.">
-      <h3 data-en="Avg. Wash Cycles" data-th="รอบซักเฉลี่ย">Avg. Wash Cycles</h3>
-      <div class="value">0.0</div>
-    </div>
+
     <div class="kpi-card" id="monthly-replenishment" data-tooltip="Suggested order quantity for next month, based on target par and expected retirements.">
       <h3 data-en="Suggested Order Next Month" data-th="จำนวนสั่งซื้อที่แนะนำเดือนถัดไป">Suggested Order Next Month</h3>
       <div class="value">0 items</div>
     </div>
+
     <div class="kpi-card" id="ward-coverage" data-tooltip="Towels currently in wards versus 20-bed coverage target.">
       <h3 data-en="Towel Ward Coverage" data-th="ความครอบคลุมผ้าเช็ดตัวในวอร์ด">Towel Ward Coverage</h3>
-      <div class="value">0 / 20 Beds</div>
-      <div style="font-size: 0.8rem; color: #6c757d;" data-en="Beds" data-th="เตียง">Beds</div>
-      <!-- TODO: Add per-ward coverage pills here in a future non-POC scorecard version. -->
-    </div>
-    <div class="kpi-card" id="par-level-ratio" data-tooltip="Current inventory per bed against the 10:1 par target.">
-      <h3 data-en="Par Level Ratio" data-th="อัตราส่วน Par Level">Par Level Ratio</h3>
-      <div class="value">0.00 / 10.0</div>
+      <div class="value" id="ward-coverage-value">0 / 20</div>
+      <!-- Future: Add ward coverage pills here when scaling up (show only if < 100% coverage) -->
     </div>
   </section>
 
@@ -435,9 +483,8 @@
     </article>
 
     <article class="chart-card">
-      <h2 data-en="3. Towel Life Cycle Analysis" data-th="3. วิเคราะห์วงจรชีวิตผ้าเช็ดตัว">3. Towel Life Cycle Analysis</h2>
-      <!-- Red bar in this chart means towels overdue for retirement (>=100 cycles and not yet DECOMMISSIONED). -->
-      <div class="chart-wrapper"><canvas id="lost-by-step-chart"></canvas></div>
+      <h2 data-en="3. Ward Availability vs Minimum Threshold" data-th="3. จำนวนผ้าในวอร์ดเทียบเกณฑ์ขั้นต่ำ">3. Ward Availability vs Minimum Threshold</h2>
+      <div class="chart-wrapper"><canvas id="linen-status-chart"></canvas></div>
     </article>
 
     <article class="chart-card wide">
@@ -455,8 +502,9 @@
     </article>
 
     <article class="chart-card">
-      <h2 data-en="5. Turnover Performance (Actual vs Target)" data-th="5. ประสิทธิภาพการหมุนเวียน (จริง vs เป้าหมาย)">5. Turnover Performance (Actual vs Target)</h2>
-      <div class="chart-wrapper"><canvas id="linen-status-chart"></canvas></div>
+      <h2 data-en="5. Towel Life Cycle Analysis" data-th="5. วิเคราะห์วงจรชีวิตผ้าเช็ดตัว">5. Towel Life Cycle Analysis</h2>
+      <!-- Red bar in this chart means towels overdue for retirement (>=100 cycles and not yet DECOMMISSIONED). -->
+      <div class="chart-wrapper"><canvas id="lost-by-step-chart"></canvas></div>
     </article>
   </section>
 
