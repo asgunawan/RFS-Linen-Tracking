@@ -86,6 +86,14 @@
       padding: 1.5rem;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
       border: 1px solid #e5e7eb;
+      position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      cursor: default;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
     }
 
     .kpi-card h3 {
@@ -101,6 +109,64 @@
       font-weight: 700;
       color: #0056b3;
       line-height: 1.2;
+    }
+
+    #monthly-replenishment h3 {
+      font-size: 0.88rem;
+      line-height: 1.2;
+      margin-bottom: 0.35rem;
+    }
+
+    .kpi-card .value.kpi-good {
+      color: #28a745;
+    }
+
+    .kpi-card .value.kpi-caution {
+      color: #8da225;
+    }
+
+    .kpi-card::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: calc(100% + 12px);
+      background: #343a40;
+      color: #ffffff;
+      border-radius: 6px;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      white-space: pre-line;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      left: 1.25rem;
+      bottom: calc(100% + 4px);
+      width: 10px;
+      height: 10px;
+      background: #343a40;
+      transform: rotate(45deg);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+      z-index: 19;
+    }
+
+    .kpi-card:hover::after,
+    .kpi-card:hover::before {
+      opacity: 1;
+    }
+
+    .kpi-card:hover::after {
+      transform: translateY(0);
     }
 
     .charts-container {
@@ -330,23 +396,24 @@
   </header>
 
   <section class="kpi-container">
-    <div class="kpi-card" id="total-linen">
+    <div class="kpi-card" id="total-linen" data-tooltip="Active towels currently in circulation across all stages.">
       <h3 data-en="Total Towel Inventory" data-th="จำนวนผ้าเช็ดตัวทั้งหมด">Total Towel Inventory</h3>
       <div class="value">0</div>
     </div>
-    <div class="kpi-card" id="avg-cycles">
+    <div class="kpi-card" id="avg-cycles" data-tooltip="Average wash-cycle count per active towel.">
       <h3 data-en="Avg. Wash Cycles" data-th="รอบซักเฉลี่ย">Avg. Wash Cycles</h3>
       <div class="value">0.0</div>
     </div>
-    <div class="kpi-card" id="monthly-replenishment">
-      <h3 data-en="Est. Monthly Need" data-th="ความต้องการต่อเดือนโดยประมาณ">Est. Monthly Need</h3>
+    <div class="kpi-card" id="monthly-replenishment" data-tooltip="Suggested order quantity for next month, based on target par and expected retirements.">
+      <h3 data-en="Suggested Order Next Month" data-th="จำนวนสั่งซื้อที่แนะนำเดือนถัดไป">Suggested Order Next Month</h3>
       <div class="value">0 items</div>
     </div>
-    <div class="kpi-card" id="ward-coverage">
+    <div class="kpi-card" id="ward-coverage" data-tooltip="Towels currently in wards versus 20-bed coverage target.">
       <h3 data-en="Towel Ward Coverage" data-th="ความครอบคลุมผ้าเช็ดตัวในวอร์ด">Towel Ward Coverage</h3>
       <div class="value">0 / 20 Beds</div>
+      <!-- TODO: Add per-ward coverage pills here in a future non-POC scorecard version. -->
     </div>
-    <div class="kpi-card" id="par-level-ratio">
+    <div class="kpi-card" id="par-level-ratio" data-tooltip="Current inventory per bed against the 10:1 par target.">
       <h3 data-en="Par Level Ratio" data-th="อัตราส่วน Par Level">Par Level Ratio</h3>
       <div class="value">0.00 / 10.0</div>
     </div>
@@ -375,9 +442,9 @@
       <h2>
         <span data-en="4a. Towel Cycle Time Duration" data-th="4a. ระยะเวลาในแต่ละสถานะ">4a. Towel Cycle Time Duration</span>
         <div class="stage-btn-group">
-          <button class="stage-btn active" data-stage="New Linen">New Linen</button>
+          <button class="stage-btn" data-stage="New Linen">New Linen</button>
           <button class="stage-btn" data-stage="Laundry">Laundry</button>
-          <button class="stage-btn" data-stage="Storage">Storage</button>
+          <button class="stage-btn active" data-stage="Storage">Storage</button>
           <button class="stage-btn" data-stage="Ward">Ward</button>
           <button class="stage-btn" data-stage="DEBUG_TOTAL">Debug Total</button>
         </div>

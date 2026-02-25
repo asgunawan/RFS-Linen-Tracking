@@ -186,10 +186,63 @@ NEW_SCRIPT = r"""<script>
         document.querySelector('#total-linen .value').textContent = circulatingNow;
 
         const bedCoverage = Math.min(stockCounts['In Wards'], 20);
-        document.querySelector('#ward-coverage .value').textContent = `${bedCoverage} / 20 Beds`;
+        const wardCoverageValueEl = document.querySelector('#ward-coverage .value');
+        wardCoverageValueEl.textContent = `${bedCoverage} / 20 Beds`;
+        wardCoverageValueEl.classList.remove('kpi-good', 'kpi-caution');
+        if (bedCoverage >= 20) {
+            wardCoverageValueEl.classList.add('kpi-good');
+        }
 
-        const parRatio = (circulatingNow / 20).toFixed(2);
-        document.querySelector('#par-level-ratio .value').textContent = `${parRatio} / 10.0`;
+        const parRatioNum = circulatingNow / 20;
+        const parRatio = parRatioNum.toFixed(2);
+        const parRatioValueEl = document.querySelector('#par-level-ratio .value');
+        parRatioValueEl.textContent = `${parRatio} / 10.0`;
+        parRatioValueEl.classList.remove('kpi-good', 'kpi-caution');
+        if (parRatioNum >= 10) {
+            parRatioValueEl.classList.add('kpi-good');
+        } else if (parRatioNum >= 7) {
+            parRatioValueEl.classList.add('kpi-caution');
+        }
+
+        const TARGET_BEDS = 20;
+        const TARGET_PAR_RATIO = 10;
+        const targetParInventory = TARGET_BEDS * TARGET_PAR_RATIO;
+        const latestEventMs = rawData.reduce((maxTs, ev) => {
+            const ts = Date.parse(ev['Event Timestamp'] || '');
+            return Number.isNaN(ts) ? maxTs : Math.max(maxTs, ts);
+        }, 0);
+        const recencyEnd = latestEventMs ? new Date(latestEventMs) : SIM_END;
+        const recencyStart = new Date(recencyEnd);
+        recencyStart.setDate(recencyStart.getDate() - 30);
+        const recentDecomm30d = rawData.filter(ev => {
+            if (ev['Process'] !== 'DECOMMISSION' || !ev['Event Timestamp']) return false;
+            const t = new Date(ev['Event Timestamp']);
+            return t >= recencyStart && t <= recencyEnd;
+        }).length;
+        const suggestedOrderQty = Math.max(0, targetParInventory - circulatingNow) + recentDecomm30d;
+
+        document.querySelector('#monthly-replenishment .value').textContent = `${suggestedOrderQty} items`;
+
+        document.getElementById('total-linen').setAttribute(
+            'data-tooltip',
+            `Active towels currently in circulation across all stages.\nNow in circulation: ${circulatingNow}`
+        );
+        document.getElementById('avg-cycles').setAttribute(
+            'data-tooltip',
+            `Average wash-cycle count per active towel.\nActive items: ${activeItems.length}`
+        );
+        document.getElementById('monthly-replenishment').setAttribute(
+            'data-tooltip',
+            `Suggested order quantity for next month.\nTarget par = ${TARGET_BEDS} beds × ${TARGET_PAR_RATIO} = ${targetParInventory}\nCurrent inventory = ${circulatingNow}\n30-day decommissions = ${recentDecomm30d}\nSuggested order = max(0, ${targetParInventory} - ${circulatingNow}) + ${recentDecomm30d} = ${suggestedOrderQty}`
+        );
+        document.getElementById('ward-coverage').setAttribute(
+            'data-tooltip',
+            `Coverage in wards versus bed target.\nCurrent: ${bedCoverage} / ${TARGET_BEDS} beds`
+        );
+        document.getElementById('par-level-ratio').setAttribute(
+            'data-tooltip',
+            `Inventory per bed versus par target.\nCurrent: ${parRatio} / ${TARGET_PAR_RATIO}.0`
+        );
 
         new Chart(document.getElementById('bottlenecks-chart'), {
             type: 'doughnut',
@@ -293,12 +346,12 @@ NEW_SCRIPT = r"""<script>
             }
         }
 
-        const initResult = buildHistogram('New Linen');
+        const initResult = buildHistogram('Storage');
         chart4a = new Chart(document.getElementById('rfid-barcode-chart'), {
             type: 'bar',
             data: {
                 labels: Object.keys(initResult.buckets),
-                datasets: [{ label: 'Items — New Linen', data: Object.values(initResult.buckets), backgroundColor: '#0056b3', borderRadius: 3 }]
+                datasets: [{ label: 'Items — Storage', data: Object.values(initResult.buckets), backgroundColor: '#0056b3', borderRadius: 3 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
@@ -367,8 +420,7 @@ NEW_SCRIPT = r"""<script>
         document.getElementById('fc-avg-daily').textContent    = avgDaily.toFixed(1);
         document.getElementById('fc-near-retire').textContent  = nearRetire;
         document.getElementById('fc-days-retire').textContent  = daysToRetire + ' days';
-        document.getElementById('fc-replenish').textContent    = Math.ceil(avgDaily * 30) + ' items/month';
-        document.querySelector('#monthly-replenishment .value').textContent = Math.ceil(avgDaily * 30 * 0.15) + ' items';
+        document.getElementById('fc-replenish').textContent    = suggestedOrderQty + ' items/month';
 
         const fcCtx = document.getElementById('forecast-chart');
         new Chart(fcCtx, {
