@@ -252,6 +252,38 @@ NEW_SCRIPT = r"""<script>
             notificationModal.setAttribute('aria-hidden', 'true');
         }
 
+        // ── Report Modal Logic ─────────────────────────────────────────────
+        const reportBtn      = document.getElementById('report-btn');
+        const reportModal    = document.getElementById('report-modal');
+        const reportBackdrop = document.getElementById('report-backdrop');
+        const reportCloseBtn = document.getElementById('report-close-btn');
+
+        function openReportModal() {
+            if (reportModal) {
+                reportModal.classList.add('show');
+                reportModal.setAttribute('aria-hidden', 'false');
+            }
+        }
+
+        function closeReportModal() {
+            if (reportModal) {
+                reportModal.classList.remove('show');
+                reportModal.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        if (reportBtn)      reportBtn.addEventListener('click', openReportModal);
+        if (reportCloseBtn) reportCloseBtn.addEventListener('click', closeReportModal);
+        if (reportBackdrop) reportBackdrop.addEventListener('click', closeReportModal);
+
+        // Global Escape key to close any modal
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeNotificationModal();
+                closeReportModal();
+            }
+        });
+
         function pushNotification(message, detail) {
             notifications.unshift({ message, detail, timestamp: new Date() });
             if (notifications.length > 12) notifications.length = 12;

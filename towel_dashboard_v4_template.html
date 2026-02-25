@@ -629,6 +629,87 @@
       color: #721c24;
       border-color: #f5c6cb;
     }
+
+    .report-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .report-modal.show { display: flex; }
+    
+    .report-panel {
+      position: relative;
+      width: min(500px, 95vw);
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+      border: 1px solid #dbe3ec;
+      padding: 1.5rem;
+      animation: reportModalFade 0.3s ease-out;
+    }
+    @keyframes reportModalFade {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .report-panel h3 {
+      margin-top: 0;
+      margin-bottom: 1.2rem;
+      color: #0056b3;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 0.5rem;
+      font-size: 1.25rem;
+    }
+
+    .report-option {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 1rem;
+      border: 1px solid #e9ecef;
+      border-radius: 10px;
+      margin-bottom: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      text-align: left;
+      width: 100%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .report-option:hover { 
+      background: #f0f7ff; 
+      border-color: #007bff; 
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+    }
+    .report-option h4 { color: #0056b3; margin: 0; font-size: 1.05rem; }
+    .report-option p { margin: 0; font-size: 0.88rem; color: #6c757d; line-height: 1.4; }
+
+    .report-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .report-btn:hover {
+      background: #218838;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+    .report-btn:active {
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -646,7 +727,7 @@
         <label for="date-range" data-en="Date Range:" data-th="ช่วงวันที่:">Date Range:</label>
         <input type="month" id="date-range" value="2025-12">
       </div>
-      <button class="print-btn" onclick="window.print()" data-en="Print / PDF Report" data-th="พิมพ์ / รายงาน PDF">Print / PDF Report</button>
+      <button id="report-btn" class="report-btn" data-en="Generate Report" data-th="สร้างรายงาน">Generate Report</button>
       <button id="notification-btn" class="notification-btn" aria-label="Notifications" title="Notifications">
         🔔
         <span id="notification-badge" class="notification-badge">0</span>
@@ -776,6 +857,37 @@
       </table>
     </div>
   </section>
+
+  <div id="report-modal" class="report-modal" aria-hidden="true">
+    <div id="report-backdrop" class="notification-backdrop"></div>
+    <div class="report-panel" role="dialog" aria-label="Generate Report Options">
+      <h3 data-en="Select Report Type" data-th="เลือกประเภทรายงาน">Select Report Type</h3>
+      
+      <button class="report-option">
+        <h4 data-en="1. Linen Usage by Ward" data-th="1. การใช้งานผ้าตามวอร์ด">1. Linen Usage by Ward</h4>
+        <p data-en="Tracks linen/towel consumption across different wards." data-th="ติดตามการใช้ผ้าเช็ดตัวในแต่ละวอร์ด">Tracks linen/towel consumption across different wards.</p>
+      </button>
+
+      <button class="report-option">
+        <h4 data-en="2. Linen Stock Levels" data-th="2. ระดับสต็อกผ้า">2. Linen Stock Levels</h4>
+        <p data-en="Tracks inventory counts at various hospital locations (Laundry, Ward, Storage)." data-th="ติดตามจำนวนสินค้าคงคลังในแผนกซักรีด วอร์ด และคลังสินค้า">Tracks inventory counts at various hospital locations (Laundry, Ward, Storage).</p>
+      </button>
+
+      <button class="report-option">
+        <h4 data-en="3. Linen Life Cycle Analysis" data-th="3. วิเคราะห์วงจรชีวิตผ้า">3. Linen Life Cycle Analysis</h4>
+        <p data-en="Analyze linen life cycle by tracking wash counts." data-th="วิเคราะห์วงจรชีวิตผ้าโดยการติดตามจำนวนครั้งที่ซัก">Analyze linen life cycle by tracking wash counts.</p>
+      </button>
+
+      <button class="report-option">
+        <h4 data-en="4. Linen Cycle Times Analysis" data-th="4. วิเคราะห์ระยะเวลาวงจรผ้า">4. Linen Cycle Times Analysis</h4>
+        <p data-en="Analyze linen cycle time between various status (e.g. from 'dirty' to 'ready to use')." data-th="วิเคราะห์ระยะเวลาการหมุนเวียนผ้าระหว่างสถานะต่างๆ">Analyze linen cycle time between various status (e.g. from 'dirty' to 'ready to use').</p>
+      </button>
+
+      <div style="text-align: right; margin-top: 0.5rem;">
+        <button id="report-close-btn" class="notification-close-btn" style="width: auto; padding: 0.4rem 1rem;">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!--__DASHBOARD_SCRIPT__-->
 </body>
