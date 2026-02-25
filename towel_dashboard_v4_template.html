@@ -73,6 +73,207 @@
       font-weight: 500;
     }
 
+    .notification-btn {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #0056b3;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: -4px;
+      right: -3px;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      background: #dc3545;
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 16px;
+      text-align: center;
+      padding: 0 4px;
+      display: none;
+    }
+
+    .notification-badge.show {
+      display: inline-block;
+    }
+
+    .toast-container {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .notification-toast {
+      background: #0056b3;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.65rem 0.95rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      max-width: min(92vw, 560px);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.35;
+      pointer-events: auto;
+    }
+
+    .notification-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .notification-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .notification-modal.show {
+      display: flex;
+    }
+
+    .notification-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.36);
+    }
+
+    .notification-panel {
+      position: relative;
+      width: min(560px, 95vw);
+      max-height: 80vh;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 20px 38px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      z-index: 1;
+      border: 1px solid #dbe3ec;
+    }
+
+    .notification-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid #e9ecef;
+      background: #f6f9fc;
+    }
+
+    .notification-panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: #0056b3;
+    }
+
+    .notification-actions {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .notification-debug-btn,
+    .notification-close-btn {
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      padding: 0.35rem 0.55rem;
+      font-weight: 600;
+    }
+
+    .notification-debug-btn {
+      background: #e7f1ff;
+      color: #0056b3;
+    }
+
+    .notification-close-btn {
+      background: #f0f0f0;
+      color: #495057;
+      font-size: 0.9rem;
+      width: 30px;
+      height: 30px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .notification-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: calc(80vh - 62px);
+      overflow-y: auto;
+    }
+
+    .notification-item {
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid #eef2f6;
+    }
+
+    .notification-item:last-child {
+      border-bottom: none;
+    }
+
+    .notification-item-title {
+      font-size: 0.9rem;
+      color: #1d2d3d;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .notification-item-detail {
+      margin-top: 0.22rem;
+      color: #3b4b5c;
+      font-size: 0.8rem;
+      line-height: 1.3;
+    }
+
+    .notification-item-time {
+      margin-top: 0.2rem;
+      color: #7a8794;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .notification-item-meta {
+      margin-top: 0.25rem;
+      color: #6c757d;
+      font-size: 0.78rem;
+    }
+
+    .notification-empty {
+      color: #6c757d;
+      font-size: 0.9rem;
+      padding: 1.15rem 1rem;
+      text-align: center;
+    }
+
     .kpi-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -388,6 +589,10 @@
         grid-template-columns: 1fr;
       }
 
+      .header-controls {
+        justify-content: center;
+      }
+
       table {
         font-size: 0.85rem;
       }
@@ -442,8 +647,30 @@
         <input type="month" id="date-range" value="2025-12">
       </div>
       <button class="print-btn" onclick="window.print()" data-en="Print / PDF Report" data-th="พิมพ์ / รายงาน PDF">Print / PDF Report</button>
+      <button id="notification-btn" class="notification-btn" aria-label="Notifications" title="Notifications">
+        🔔
+        <span id="notification-badge" class="notification-badge">0</span>
+      </button>
     </div>
   </header>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <div id="notification-modal" class="notification-modal" aria-hidden="true">
+    <div id="notification-backdrop" class="notification-backdrop"></div>
+    <div class="notification-panel" role="dialog" aria-label="Recent Notifications">
+      <div class="notification-panel-header">
+        <h3 data-en="Recent Notifications" data-th="การแจ้งเตือนล่าสุด">Recent Notifications</h3>
+        <div class="notification-actions">
+          <button id="notification-debug-btn" class="notification-debug-btn" data-en="Debug Dispatch" data-th="ทดสอบการจ่ายผ้า">Debug Dispatch</button>
+          <button id="notification-close-btn" class="notification-close-btn" aria-label="Close">×</button>
+        </div>
+      </div>
+      <ul id="notification-list" class="notification-list">
+        <li class="notification-empty" data-en="No notifications yet." data-th="ยังไม่มีการแจ้งเตือน">No notifications yet.</li>
+      </ul>
+    </div>
+  </div>
 
   <section class="kpi-container">
     <div class="kpi-card" id="throughput-24h" data-tooltip="Linen movement in the latest 24-hour window.">

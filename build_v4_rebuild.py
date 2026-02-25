@@ -171,6 +171,96 @@ NEW_SCRIPT = r"""<script>
             thBtn.classList.add('active'); enBtn.classList.remove('active');
         });
 
+        // ── Notifications (debug-trigger only; no startup auto-push) ─────
+        const notificationBtn = document.getElementById('notification-btn');
+        const notificationBadge = document.getElementById('notification-badge');
+        const notificationModal = document.getElementById('notification-modal');
+        const notificationBackdrop = document.getElementById('notification-backdrop');
+        const notificationCloseBtn = document.getElementById('notification-close-btn');
+        const notificationList = document.getElementById('notification-list');
+        const toastContainer = document.getElementById('toast-container');
+        const notificationDebugBtn = document.getElementById('notification-debug-btn');
+
+        const notifications = [];
+        let unreadNotifications = 0;
+        let toastTimer = null;
+
+        function formatNotificationTime(ts) {
+            return ts.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+                ' ' + ts.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatTowelLabel(epc) {
+            const epcText = String(epc || '').trim();
+            if (!epcText) return 'Towel Unknown';
+            const lastDot = epcText.lastIndexOf('.');
+            const tail = lastDot >= 0 ? epcText.slice(lastDot + 1) : epcText;
+            const compact = tail.replace(/[^0-9A-Za-z]/g, '');
+            return `Towel ${compact || epcText}`;
+        }
+
+        function updateNotificationBadge() {
+            if (!notificationBadge) return;
+            notificationBadge.textContent = String(Math.min(unreadNotifications, 99));
+            notificationBadge.classList.toggle('show', unreadNotifications > 0);
+        }
+
+        function renderNotifications() {
+            if (!notificationList) return;
+            if (!notifications.length) {
+                notificationList.innerHTML = '<li class="notification-empty" data-en="No notifications yet." data-th="ยังไม่มีการแจ้งเตือน">No notifications yet.</li>';
+                return;
+            }
+
+            notificationList.innerHTML = notifications.map(n => (
+                `<li class="notification-item">` +
+                    `<div class="notification-item-title">${n.message}</div>` +
+                    (n.detail ? `<div class="notification-item-detail">${n.detail}</div>` : '') +
+                    `<div class="notification-item-time">${formatNotificationTime(n.timestamp)}</div>` +
+                `</li>`
+            )).join('');
+        }
+
+        function showToast(message) {
+            if (!toastContainer) return;
+            const toast = document.createElement('div');
+            toast.className = 'notification-toast';
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation in next frame
+            requestAnimationFrame(() => toast.classList.add('show'));
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 250);
+            }, 3500);
+        }
+
+        function openNotificationModal() {
+            if (!notificationModal) return;
+            notificationModal.classList.add('show');
+            notificationModal.setAttribute('aria-hidden', 'false');
+            unreadNotifications = 0;
+            updateNotificationBadge();
+            renderNotifications();
+        }
+
+        function closeNotificationModal() {
+            if (!notificationModal) return;
+            notificationModal.classList.remove('show');
+            notificationModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function pushNotification(message, detail) {
+            notifications.unshift({ message, detail, timestamp: new Date() });
+            if (notifications.length > 12) notifications.length = 12;
+            unreadNotifications += 1;
+            updateNotificationBadge();
+            renderNotifications();
+            showToast(message);
+        }
+
         // ── Chart 1: Usage by Ward (last 30 days) ─────────────────────────
         const completeCutoffDate = SIM_END.toISOString().split('T')[0];
         const allCompleteDates = Object.keys(processed.usageByDate)
@@ -196,6 +286,56 @@ NEW_SCRIPT = r"""<script>
                 wardFilter.appendChild(opt);
             });
         }
+
+        function triggerDebugDispatchNotification() {
+            const storageItems = items.filter(i => {
+                const cur = getCurrentCheckIn(i);
+                return cur && cur.Location === 'Cleaned Linen Department';
+            });
+
+            const randomItem = storageItems.length
+                ? storageItems[Math.floor(Math.random() * storageItems.length)]
+                : null;
+
+            const selectedWard = (wardFilter && wardFilter.value && wardFilter.value !== 'All Wards')
+                ? wardFilter.value
+                : 'Wards';
+
+            const availableWards = (processed.wards || []).filter(w => String(w).startsWith('Ward'));
+            const randomArrivalWard = availableWards.length
+                ? availableWards[Math.floor(Math.random() * availableWards.length)]
+                : 'Ward 1';
+
+            const towelId = randomItem ? randomItem.epc : 'Unknown Towel';
+            const towelLabel = formatTowelLabel(towelId);
+            pushNotification(
+                `${towelLabel} has been checked out from Clean Storage.`,
+                `Heading to ${selectedWard}`
+            );
+
+            setTimeout(() => {
+                pushNotification(
+                    `${towelLabel} has arrived at ${randomArrivalWard}.`,
+                    `Ward IN registered`
+                );
+            }, 3000);
+        }
+
+        if (notificationBtn) {
+            notificationBtn.addEventListener('click', () => {
+                if (notificationModal && notificationModal.classList.contains('show')) {
+                    closeNotificationModal();
+                } else {
+                    openNotificationModal();
+                }
+            });
+        }
+        if (notificationCloseBtn) notificationCloseBtn.addEventListener('click', closeNotificationModal);
+        if (notificationBackdrop) notificationBackdrop.addEventListener('click', closeNotificationModal);
+        if (notificationDebugBtn) notificationDebugBtn.addEventListener('click', triggerDebugDispatchNotification);
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape') closeNotificationModal();
+        });
 
         const initialUsage = getUsageSeries('All Wards');
         const usageChart = new Chart(document.getElementById('cycles-lifespan-chart'), {
