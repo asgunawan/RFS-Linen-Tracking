@@ -185,7 +185,7 @@ Each scan event (`IN` / `OUT`) carries:
 
 | File | Purpose |
 |---|---|
-| `Bed Linen Tracking Dashboard demo v4.html` | **Main deliverable** — fully self-contained single-file dashboard |
+| `Towel Tracking Dashboard demo v4.html` | **Main deliverable** — fully self-contained single-file dashboard |
 | `generate_epcis_data.py` | Python generator producing 50k+ EPCIS events for ~193 towels |
 | `epcis_events.json` | Raw output from the generator |
 | `build_v4_rebuild.py` | Injects JSON into the HTML and rewrites the script block |
@@ -195,7 +195,7 @@ Each scan event (`IN` / `OUT`) carries:
 
 ## 🚀 Running
 
-1. Open `Bed Linen Tracking Dashboard demo v4.html` in any browser.
+1. Open `Towel Tracking Dashboard demo v4.html` in any browser.
 2. No installation, no server, no dependencies.
 
 **To regenerate data:**

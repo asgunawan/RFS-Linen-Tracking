@@ -1,73 +1,239 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RFS - Towel Tracking Dashboard (POC)</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: #e9ecef; color: #1f2937; }
-    .header { background: #0056b3; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .header-left { display: flex; align-items: center; gap: 16px; }
-    .header-left img { height: 58px; }
-    .header-title { font-size: 26px; line-height: 1.15; font-weight: 700; }
-    .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .lang-toggle button, .print-btn { border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-size: 11px; }
-    .lang-toggle button.active { background: #fff; color: #0056b3; }
-    .lang-toggle button { background: #e5e7eb; color: #111827; }
-    .date-filter label { font-weight: 700; margin-right: 6px; font-size: 13px; }
-    .date-filter input { border: none; border-radius: 4px; padding: 6px 10px; font-size: 11px; }
-    .print-btn { background: #2ca44f; color: #fff; font-weight: 600; }
-
-    .container { padding: 10px 10px 14px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
-    .kpi-card { background: #f1f3f5; border: 1px solid #d5d9de; border-radius: 7px; padding: 12px 14px; min-height: 78px; }
-    .kpi-card h3 { margin: 0 0 7px; font-size: 37px; color: #606b7a; font-weight: 700; }
-    .kpi-card .value { color: #0056b3; font-size: 49px; font-weight: 800; line-height: 1.05; }
-
-    .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; }
-    .chart-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .chart-card { background: #f1f3f5; border: 1px solid #d5d9de; border-radius: 7px; padding: 10px 12px; }
-    .chart-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; margin-bottom: 8px; padding-bottom: 6px; }
-    .chart-card h2 { margin: 0; font-size: 47px; color: #0056b3; font-weight: 800; }
-    .chart-wrap-sm { height: 245px; }
-    .chart-wrap-md { height: 240px; }
-    .chart-wrap-lg { height: 220px; }
-
-    #ward-filter { border: 1px solid #c7ccd3; border-radius: 4px; padding: 2px 4px; font-size: 11px; }
-
-    .stage-btn-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .stage-btn { border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; color: #334155; font-size: 10px; padding: 2px 7px; cursor: pointer; }
-    .stage-btn.active { background: #0056b3; color: #fff; border-color: #0056b3; }
-
-    .kpi-panel { background: #f1f3f5; border: 1px solid #d5d9de; border-radius: 7px; padding: 10px 12px; }
-    .kpi-panel h2 { margin: 0 0 8px; font-size: 47px; color: #0056b3; font-weight: 800; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
-    .kpi-lines { list-style: none; padding: 0; margin: 10px 0 0; }
-    .kpi-lines li { margin-bottom: 8px; font-size: 19px; }
-    .kpi-lines strong { font-weight: 700; }
-
-    @media (max-width: 1600px) {
-      .header-title { font-size: 24px; }
-      .kpi-card h3 { font-size: 31px; }
-      .chart-card h2, .kpi-panel h2 { font-size: 39px; }
-      .kpi-card .value { font-size: 42px; }
-      .kpi-lines li { font-size: 17px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    @media (max-width: 1100px) {
-      .kpi-grid { grid-template-columns: repeat(2, minmax(200px, 1fr)); }
-      .chart-row-3 { grid-template-columns: 1fr; }
-      .grid-2 { grid-template-columns: 1fr; }
+    body {
+      font-family: 'Inter', 'Prompt', sans-serif;
+      background-color: #f8f9fa;
+      color: #343a40;
+      line-height: 1.6;
+    }
+
+    .header {
+      background-color: #0056b3;
+      color: white;
+      padding: 1.2rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .lang-toggle button {
+      background: #ffffff;
+      color: #0056b3;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .lang-toggle button.active {
+      box-shadow: inset 0 0 0 2px #003d80;
+    }
+
+    .date-filter input {
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: none;
+    }
+
+    .print-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .kpi-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      padding: 1.5rem;
+    }
+
+    .kpi-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+    }
+
+    .kpi-card h3 {
+      font-size: 1rem;
+      color: #6c757d;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+      font-weight: 600;
+    }
+
+    .kpi-card .value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #0056b3;
+      line-height: 1.2;
+    }
+
+    .charts-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+      position: relative;
+    }
+
+    .chart-card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      color: #0056b3;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-wrapper {
+      height: 250px;
+    }
+
+    .chart-card.wide {
+      grid-column: span 2;
+    }
+
+    .stage-btn-group {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .stage-btn {
+      background: #e9ecef;
+      border: none;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      color: #495057;
+    }
+
+    .stage-btn.active {
+      background: #0056b3;
+      color: white;
+    }
+
+    .forecast-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+      padding: 0 1.5rem 2rem;
+    }
+
+    .kpi-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      border: 1px solid #e5e7eb;
+    }
+
+    .kpi-panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.6rem;
+      color: #0056b3;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 0.4rem;
+    }
+
+    .kpi-lines {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .kpi-lines li {
+      margin-bottom: 0.45rem;
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+
+    .kpi-lines strong {
+      font-weight: 700;
+    }
+
+    #ward-filter {
+      border: 1px solid #cfd6de;
+      border-radius: 4px;
+      padding: 0.2rem 0.35rem;
+      font-size: 0.75rem;
+      height: 24px;
+    }
+
+    @media (max-width: 1200px) {
+      .kpi-card h3 { font-size: 0.95rem; }
+      .kpi-card .value { font-size: 2rem; }
+      .kpi-panel h2 { font-size: 1.3rem; }
+      .kpi-lines li { font-size: 0.95rem; }
+      .chart-card.wide { grid-column: span 1; }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .charts-container,
+      .forecast-layout {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <header class="header">
-    <div class="header-left">
-      <img src="https://file.garden/aKXRqsu4gl9vV3Oe/TradeLink%20Logo%20-%20white.png" alt="TradeLink Logo" />
-      <div class="header-title">Ramathibodi Facilities Services<br />Towel Tracking Dashboard (POC)</div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <img src="https://file.garden/aKXRqsu4gl9vV3Oe/TradeLink%20Logo%20-%20white.png" alt="TradeLink Logo" style="height: 60px; display: block;">
+      <h1>Ramathibodi Facilities Services<br>Towel Tracking Dashboard (POC)</h1>
     </div>
     <div class="header-controls">
       <div class="lang-toggle">
@@ -76,79 +242,90 @@
       </div>
       <div class="date-filter">
         <label for="date-range">Date Range:</label>
-        <input type="month" id="date-range" value="2025-12" />
+        <input type="month" id="date-range" value="2025-12">
       </div>
-      <button class="print-btn">Print / PDF Report</button>
+      <button class="print-btn" onclick="window.print()">Print / PDF Report</button>
     </div>
   </header>
 
-  <main class="container">
-    <section class="kpi-grid">
-      <div class="kpi-card" id="total-linen"><h3 data-en="Total Towel Inventory" data-th="จำนวนผ้าเช็ดตัวทั้งหมด">Total Towel Inventory</h3><div class="value">0</div></div>
-      <div class="kpi-card" id="avg-cycles"><h3 data-en="Avg. Wash Cycles" data-th="รอบซักเฉลี่ย">Avg. Wash Cycles</h3><div class="value">0.0</div></div>
-      <div class="kpi-card" id="monthly-replenishment"><h3 data-en="Est. Monthly Need" data-th="ความต้องการต่อเดือนโดยประมาณ">Est. Monthly Need</h3><div class="value">0 items</div></div>
-      <div class="kpi-card" id="ward-coverage"><h3 data-en="Towel Ward Coverage" data-th="ความครอบคลุมผ้าเช็ดตัวในวอร์ด">Towel Ward Coverage</h3><div class="value">0 / 20 Beds</div></div>
-      <div class="kpi-card" id="par-level-ratio"><h3 data-en="Par Level Ratio" data-th="อัตราส่วน Par Level">Par Level Ratio</h3><div class="value">0.00 / 10.0</div></div>
-    </section>
+  <section class="kpi-container">
+    <div class="kpi-card" id="total-linen">
+      <h3 data-en="Total Towel Inventory" data-th="จำนวนผ้าเช็ดตัวทั้งหมด">Total Towel Inventory</h3>
+      <div class="value">0</div>
+    </div>
+    <div class="kpi-card" id="avg-cycles">
+      <h3 data-en="Avg. Wash Cycles" data-th="รอบซักเฉลี่ย">Avg. Wash Cycles</h3>
+      <div class="value">0.0</div>
+    </div>
+    <div class="kpi-card" id="monthly-replenishment">
+      <h3 data-en="Est. Monthly Need" data-th="ความต้องการต่อเดือนโดยประมาณ">Est. Monthly Need</h3>
+      <div class="value">0 items</div>
+    </div>
+    <div class="kpi-card" id="ward-coverage">
+      <h3 data-en="Towel Ward Coverage" data-th="ความครอบคลุมผ้าเช็ดตัวในวอร์ด">Towel Ward Coverage</h3>
+      <div class="value">0 / 20 Beds</div>
+    </div>
+    <div class="kpi-card" id="par-level-ratio">
+      <h3 data-en="Par Level Ratio" data-th="อัตราส่วน Par Level">Par Level Ratio</h3>
+      <div class="value">0.00 / 10.0</div>
+    </div>
+  </section>
 
-    <section class="chart-row-3">
-      <article class="chart-card">
-        <div class="chart-header">
-          <h2 data-en="1. Towel Usage by Ward" data-th="1. การใช้ผ้าเช็ดตัวตามวอร์ด">1. Towel Usage by Ward</h2>
-          <select id="ward-filter"><option>All Wards</option></select>
+  <section class="charts-container">
+    <article class="chart-card">
+      <h2>
+        <span data-en="1. Towel Usage by Ward" data-th="1. การใช้ผ้าเช็ดตัวตามวอร์ด">1. Towel Usage by Ward</span>
+        <select id="ward-filter"><option>All Wards</option></select>
+      </h2>
+      <div class="chart-wrapper"><canvas id="cycles-lifespan-chart"></canvas></div>
+    </article>
+
+    <article class="chart-card">
+      <h2 data-en="2. Current Stock Levels" data-th="2. ระดับสต็อกปัจจุบัน">2. Current Stock Levels</h2>
+      <div class="chart-wrapper"><canvas id="bottlenecks-chart"></canvas></div>
+    </article>
+
+    <article class="chart-card">
+      <h2 data-en="3. Towel Life Cycle Analysis" data-th="3. วิเคราะห์วงจรชีวิตผ้าเช็ดตัว">3. Towel Life Cycle Analysis</h2>
+      <div class="chart-wrapper"><canvas id="lost-by-step-chart"></canvas></div>
+    </article>
+
+    <article class="chart-card wide">
+      <h2>
+        <span data-en="4a. Towel Cycle Time Duration" data-th="4a. ระยะเวลาในแต่ละสถานะ">4a. Towel Cycle Time Duration</span>
+        <div class="stage-btn-group">
+          <button class="stage-btn active" data-stage="New Linen">New Linen</button>
+          <button class="stage-btn" data-stage="Laundry">Laundry</button>
+          <button class="stage-btn" data-stage="Storage">Storage</button>
+          <button class="stage-btn" data-stage="Ward">Ward</button>
+          <button class="stage-btn" data-stage="DEBUG_TOTAL">Debug Total</button>
         </div>
-        <div class="chart-wrap-sm"><canvas id="cycles-lifespan-chart"></canvas></div>
-      </article>
+      </h2>
+      <div class="chart-wrapper"><canvas id="rfid-barcode-chart"></canvas></div>
+    </article>
 
-      <article class="chart-card">
-        <div class="chart-header"><h2 data-en="2. Current Stock Levels" data-th="2. ระดับสต็อกปัจจุบัน">2. Current Stock Levels</h2></div>
-        <div class="chart-wrap-sm"><canvas id="bottlenecks-chart"></canvas></div>
-      </article>
+    <article class="chart-card">
+      <h2 data-en="4b. Towel Status Snapshot" data-th="4b. ภาพรวมสถานะผ้าเช็ดตัว">4b. Towel Status Snapshot</h2>
+      <div class="chart-wrapper"><canvas id="linen-status-chart"></canvas></div>
+    </article>
+  </section>
 
-      <article class="chart-card">
-        <div class="chart-header"><h2 data-en="3. Towel Life Cycle Analysis" data-th="3. วิเคราะห์วงจรชีวิตผ้าเช็ดตัว">3. Towel Life Cycle Analysis</h2></div>
-        <div class="chart-wrap-sm"><canvas id="lost-by-step-chart"></canvas></div>
-      </article>
-    </section>
+  <section class="forecast-layout">
+    <article class="chart-card">
+      <h2 data-en="5. Usage Forecast (60-Day Projection)" data-th="5. คาดการณ์การใช้งาน (60 วัน)">5. Usage Forecast (60-Day Projection)</h2>
+      <div class="chart-wrapper"><canvas id="forecast-chart"></canvas></div>
+    </article>
 
-    <section class="chart-row-3" style="grid-template-columns: 2fr 1fr; margin-top:12px;">
-      <article class="chart-card">
-        <div class="chart-header">
-          <h2 data-en="4a. Towel Cycle Time Duration" data-th="4a. ระยะเวลาในแต่ละสถานะ">4a. Towel Cycle Time Duration</h2>
-          <div class="stage-btn-group">
-            <button class="stage-btn active" data-stage="New Linen">New Linen</button>
-            <button class="stage-btn" data-stage="Laundry">Laundry</button>
-            <button class="stage-btn" data-stage="Storage">Storage</button>
-            <button class="stage-btn" data-stage="Ward">Ward</button>
-            <button class="stage-btn" data-stage="DEBUG_TOTAL">Debug Total</button>
-          </div>
-        </div>
-        <div class="chart-wrap-md"><canvas id="rfid-barcode-chart"></canvas></div>
-      </article>
-
-      <article class="chart-card">
-        <div class="chart-header"><h2 data-en="4b. Towel Status Snapshot" data-th="4b. ภาพรวมสถานะผ้าเช็ดตัว">4b. Towel Status Snapshot</h2></div>
-        <div class="chart-wrap-md"><canvas id="linen-status-chart"></canvas></div>
-      </article>
-    </section>
-
-    <section class="grid-2">
-      <article class="chart-card">
-        <div class="chart-header"><h2 data-en="5. Usage Forecast (60-Day Projection)" data-th="5. คาดการณ์การใช้งาน (60 วัน)">5. Usage Forecast (60-Day Projection)</h2></div>
-        <div class="chart-wrap-lg"><canvas id="forecast-chart"></canvas></div>
-      </article>
-
-      <aside class="kpi-panel">
-        <h2 data-en="Forecast KPIs" data-th="KPI การคาดการณ์">Forecast KPIs</h2>
-        <ul class="kpi-lines">
-          <li><strong>Avg Daily Ward IN Events:</strong> <span id="fc-avg-daily">0</span></li>
-          <li><strong>Items Near Retirement (≥70 cycles):</strong> <span id="fc-near-retire">0</span></li>
-          <li><strong>~Days Until Next Retirement Wave:</strong> <span id="fc-days-retire">0 days</span></li>
-          <li><strong>Estimated Replenishment Need:</strong> <span id="fc-replenish">0 items/month</span></li>
-        </ul>
-      </aside>
-    </section>
-  </main>
+    <aside class="kpi-panel">
+      <h2 data-en="Forecast KPIs" data-th="KPI การคาดการณ์">Forecast KPIs</h2>
+      <ul class="kpi-lines">
+        <li><strong>Avg Daily Ward IN Events:</strong> <span id="fc-avg-daily">0</span></li>
+        <li><strong>Items Near Retirement (≥70 cycles):</strong> <span id="fc-near-retire">0</span></li>
+        <li><strong>~Days Until Next Retirement Wave:</strong> <span id="fc-days-retire">0 days</span></li>
+        <li><strong>Estimated Replenishment Need:</strong> <span id="fc-replenish">0 items/month</span></li>
+      </ul>
+    </aside>
+  </section>
 
   <!--__DASHBOARD_SCRIPT__-->
 </body>

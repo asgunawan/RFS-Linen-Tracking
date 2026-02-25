@@ -428,7 +428,7 @@ new_html = html.replace('<!--__DASHBOARD_SCRIPT__-->', NEW_SCRIPT)
 # ── 4. Inject actual JSON data into the placeholder ───────────────────────────
 new_html = new_html.replace('const rawData = __RAWDATA__;', f'const rawData = {raw_json};', 1)
 
-with open("Bed Linen Tracking Dashboard demo v4.html", "w", encoding="utf-8") as f:
+with open("Towel Tracking Dashboard demo v4.html", "w", encoding="utf-8") as f:
     f.write(new_html)
 
 print("Done. v4 rebuilt.")
